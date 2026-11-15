@@ -1,0 +1,17 @@
+{
+  "name": "director",
+  "version": "1.0.0",
+  "description": "director front+back",
+  "main": "backend.js",
+  "scripts": {
+    "start": "nodemon backend.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^18.0.5",
+    "exceljs": "^4.4.0",
+    "nodemon": "^3.1.14",
+    "pg": "^8.23.1"
+  }
+}

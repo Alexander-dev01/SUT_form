@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Director</title>
+  <link rel="stylesheet" href="./style/reset.css">
+  <link rel="stylesheet" href="./style/style.css">
+
+</head>
+
+<body>
+  <h1>Заполнитие, пожалуйста, данные</h1>
+  <form>
+    <label>Фамилия
+      <input type="text" name="familia" required value="1">
+    </label>
+    <label>Имя
+      <input type="text" name="imya" required value="2">
+    </label>
+    <label>Отчество
+      <input type="text" name="otcestvo" required value="3">
+    </label>
+    <div class="radio">
+      Учавствовали ранее в олимпиадах?
+      <div class="radio-list">
+        <label><input type="radio" name="olimpidada" value="da" required checked>да!</label>
+        <label><input type="radio" name="olimpidada" value="net" required>нет</label>
+      </div>
+    </div>
+    <button type="submit">Отправить данные</button>
+    <label class="itog invisible"></label>
+  </form>
+  <script src="./js/logik.js"></script>
+</body>
+
+</html>
