@@ -6,32 +6,84 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Director</title>
   <link rel="stylesheet" href="./style/reset.css">
+  <link rel="stylesheet" href="./style/variables.css">
   <link rel="stylesheet" href="./style/style.css">
 
 </head>
 
 <body>
-  <h1>Заполнитие, пожалуйста, данные</h1>
-  <form>
-    <label>Фамилия
-      <input type="text" name="familia" required value="1">
-    </label>
-    <label>Имя
-      <input type="text" name="imya" required value="2">
-    </label>
-    <label>Отчество
-      <input type="text" name="otcestvo" required value="3">
-    </label>
-    <div class="radio">
-      Учавствовали ранее в олимпиадах?
-      <div class="radio-list">
-        <label><input type="radio" name="olimpidada" value="da" required checked>да!</label>
-        <label><input type="radio" name="olimpidada" value="net" required>нет</label>
+  <div class="container">
+    <nav class="header">
+      <a href="https://sutvdonsk.ru/" class="logo">
+        <img src="/images/logo.png" alt="">
+      </a>
+      <div class="header-text">Муниципальное бюджетное учреждение
+        дополнительного образования
+        «СТАНЦИЯ ЮНЫХ ТЕХНИКОВ»
       </div>
-    </div>
-    <button type="submit">Отправить данные</button>
-    <label class="itog invisible"></label>
-  </form>
+    </nav>
+    <h1>Заявка на участие в конференции </h1>
+    <form>
+      <label>Секция
+        <select name="sekcia" required>
+          <option selected>Web-программирование</option>
+          <option>Робототехника</option>
+          <option>Программирование на пк</option>
+          <option>Инженерно техническая выставка</option>
+        </select>
+      </label>
+      <label>Фамилия
+        <input type="text" name="familia" required value="Иванов">
+      </label>
+      <label>Имя
+        <input type="text" name="imya" required value="Иван">
+      </label>
+      <label>Отчество
+        <input type="text" name="otcestvo" required value="Иванович">
+      </label>
+      <label>Номер телефона
+        <input type="tel" name="tel" required maxlength="11" value="89041231221" pattern="[0-9]{11}"
+          title="Введите 11 цифр, например: 89041231221" inputmode="numeric">
+      </label>
+      <label>Год рождения
+        <input type="date" name="dataSpawn" required>
+      </label>
+      <label>Школа
+        <select name="schule" required>
+          <option selected>Школа №1</option>
+          <option>Школа №2</option>
+          <option>Школа №3</option>
+        </select>
+      </label>
+      <label>Класс
+        <input type="number" name="klass" required min="1" max="11" step="1" title="Введите класс от 1 до 11">
+      </label>
+      <label>Доп. образование (не обазятаельно)
+        <input type="text" name="dop">
+      </label>
+
+      <label>Фамилия руководителя
+        <input type="text" name="familiaR" required value="Иванов">
+      </label>
+      <label>Имя руководителя
+        <input type="text" name="imyaR" required value="Иван">
+      </label>
+      <label>Отчество руководителя
+        <input type="text" name="otcestvoR" required value="Иванович">
+      </label>
+      <label>Номер телефона руководителя
+        <input type="tel" name="telR" required maxlength="11" value="89041231221" pattern="[0-9]{11}"
+          title="Введите 11 цифр, например: 89041231221" inputmode="numeric">
+      </label>
+      <label>Ссылка на видеоролик выступления
+        <input type="text" name="video" required >
+      </label>
+
+      <label class="itog invisible"></label>
+      <button type="submit">Отправить данные</button>
+    </form>
+  </div>
+
   <script src="./js/logik.js"></script>
 </body>
 

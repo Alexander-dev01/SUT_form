@@ -1,0 +1,17 @@
+:root {
+  --background-color1: #337AB7;
+  --background-color1-focus: #044075;
+
+  --background-color-button: #3d97e6;
+  --background-color-button-hover: #044075;
+  --background-color-button-active: #0ab9c5;
+
+  --color2:#01630e;
+  --background-color2: #1cf000;
+  --background-color2-error: #ff615c;
+
+  --color-border: #bbb;
+  --box-shadow: 0px 0px 10px 0px #003a86;
+  --border-radius: 10px;
+
+}

@@ -16,7 +16,12 @@ class Send {
     this.sendBackend(data)
   }
 
-  showHide(text) {
+  showHide(text, err) {
+    if (err) {
+      this.itog.classList.add('itog-error');
+    } else {
+      this.itog.classList.remove('itog-error');
+    }
     this.itog.textContent = text
     this.itog.classList.remove('invisible')
     setTimeout(() => {
@@ -36,19 +41,18 @@ class Send {
     })
       .then((response) => {
         if (!response.ok) {
-          const err = response.status
-          this.showHide(`Ошибка: код ${response.status}`)
-          throw new Error(err)
+          throw new Error(response.status)
         }
-        return response.json() //этот медот JSON.parse
+        return response.json()
       })
       .then((json) => {
         console.log('вот твой же объект тебе:', json);
-        this.showHide('Данные отправлены!')
+        this.showHide('Данные сохранены!')
         return json
       })
       .catch((err) => {
         console.log(err);
+          this.showHide(`Ошибка - попробуйте снова (${err})`, true)
       })
   }
 
