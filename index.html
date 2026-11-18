@@ -24,14 +24,32 @@
     </nav>
     <h1>Заявка на участие в конференции </h1>
     <form>
+      <div class="title"><h2>Выбор секции</h2></div>
       <label>Секция
-        <select name="sekcia" required>
-          <option selected>Web-программирование</option>
+        <select name="sekcia" data-js-sekcia required>
+          <option selected>Программирование на пк</option>
+          <option>Web-программирование</option>
+          <option>Физико-математические науки</option>
+          <option>Инженерно-техническая выставка</option>
           <option>Робототехника</option>
-          <option>Программирование на пк</option>
-          <option>Инженерно техническая выставка</option>
+          <option>Атомная наука и техника</option>
+          <option>Эрудит</option>
+          <option>Мир вокруг нас</option>
+          <option>Начальное техническое моделирование</option>
+          <option>Радиоконструирование</option>
+          <option>Набор и верстка текста</option>
+          <option>Современные компьютерные технологии</option>
+          <option>География</option>
         </select>
       </label>
+      <label>Подсекция
+        <select name="podsekcia" data-js-podsekcia required>
+          <option selected>Scratch</option>
+          <option>Другие языки программирования</option>
+        </select>
+      </label>
+      
+      <div class="title"><h2>Данные ученика</h2></div>
       <label>Фамилия
         <input type="text" name="familia" required value="Иванов">
       </label>
@@ -45,10 +63,13 @@
         <input type="tel" name="tel" required maxlength="11" value="89041231221" pattern="[0-9]{11}"
           title="Введите 11 цифр, например: 89041231221" inputmode="numeric">
       </label>
-      <label>Год рождения
-        <input type="date" name="dataSpawn" required>
+      <label>Электронная почта
+        <input type="email" name="email" value="obrazec@mail.ru" required>
       </label>
-      <label>Школа
+      <!-- <label>Год рождения
+        <input type="date" name="dataSpawn" required>
+      </label> -->
+      <label>Образовательное учреждение
         <select name="schule" required>
           <option selected>Школа №1</option>
           <option>Школа №2</option>
@@ -56,12 +77,25 @@
         </select>
       </label>
       <label>Класс
-        <input type="number" name="klass" required min="1" max="11" step="1" title="Введите класс от 1 до 11">
+        <input type="number" name="klass" required min="1" max="11" step="1" title="Введите класс от 1 до 11" value="1">
       </label>
-      <label>Доп. образование (не обазятаельно)
+      <!-- <label>Доп. образование (не обязатаельно)
         <input type="text" name="dop">
+      </label> -->
+
+      <div class="title"><h2>Данные работы ученика</h2></div>
+      <label data-js-nazwanie>Название работы
+        <input type="text" name="rabota" required value="Разработка сайта велопроката">
+      </label>
+      <label data-js-kolwo >Количество баллов на отборочном этапе
+        <input type="number" disabled="true" name="balls" value="99" required>
+      </label>
+      <label data-js-foto >Ссылка на фото работы
+        <input type="url" disabled="true" name="foto" value="https://sutvdonsk.ru/images/sliders/1494940542.jpg" required>
       </label>
 
+
+      <div class="title"><h2>Данные руководителя</h2></div>
       <label>Фамилия руководителя
         <input type="text" name="familiaR" required value="Иванов">
       </label>
@@ -71,13 +105,23 @@
       <label>Отчество руководителя
         <input type="text" name="otcestvoR" required value="Иванович">
       </label>
-      <label>Номер телефона руководителя
+      <!-- <label>Номер телефона руководителя
         <input type="tel" name="telR" required maxlength="11" value="89041231221" pattern="[0-9]{11}"
           title="Введите 11 цифр, например: 89041231221" inputmode="numeric">
+      </label> -->
+    
+    
+      <div class="title"><h2>Данные сопровождающего</h2></div>
+      <label>Фамилия руководителя
+        <input type="text" name="familiaS" required value="Иванов">
       </label>
-      <label>Ссылка на видеоролик выступления
-        <input type="text" name="video" required >
+      <label>Имя руководителя
+        <input type="text" name="imyaS" required value="Иван">
       </label>
+      <label>Отчество руководителя
+        <input type="text" name="otcestvoS" required value="Иванович">
+      </label>
+
 
       <label class="itog invisible"></label>
       <button type="submit">Отправить данные</button>
