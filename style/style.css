@@ -145,4 +145,8 @@ select {
   label:last-child {
     margin-bottom: 30px;
   }
+
+  label, p {
+  flex-direction: column;
+}
 }
