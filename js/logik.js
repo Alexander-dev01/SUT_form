@@ -9,22 +9,32 @@ class Send {
   }
 
   downloadExcel() {
-    fetch('http://localhost:5001/')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(response.status)
-        }
-        return response.json()
-      })
-      .then((json) => {
-        console.log('вот твой же download запрос:', json);
-        return json
-      })
-      .catch((err) => {
-        console.log(err);
-        alert(`Ошибка - попробуйте снова (${err})`, true)
-      })
-  }
+  fetch('http://localhost:5001/download')
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Ошибка сервера: ${response.status}`)
+      }
+
+      return response.blob()
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'Users.xlsx'
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      URL.revokeObjectURL(url)
+    })
+    .catch((err) => {
+      console.log(err)
+      this.showHide(`Ошибка скачивания: ${err}`, true)
+    })
+}
 
   resetId() {
     const hasID = JSON.parse(localStorage.getItem('id'))
@@ -100,7 +110,8 @@ class Send {
     this.reset.addEventListener('click', () => {
       this.resetId()
     })
-    this.reset.addEventListener('contextmenu', () => {
+    this.reset.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
       this.downloadExcel()
     })
   }

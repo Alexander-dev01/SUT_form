@@ -107,12 +107,42 @@ function appendToExcel(data) {
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
     res.end()
+    return
+  }
+
+  // скачивание excel
+  if (req.method === 'GET' && req.url === '/download') {
+    if (!fs.existsSync(fullPath)) {
+      res.writeHead(404, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Файл Excel ещё не создан' }))
+      return
+    }
+
+    res.writeHead(200, {
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="Users.xlsx"'
+    })
+
+    const fileStream = fs.createReadStream(fullPath)
+    fileStream.pipe(res)
+
+    fileStream.on('error', (err) => {
+      console.error('Ошибка чтения Excel:', err)
+
+      if (!res.headersSent) {
+        res.writeHead(500, { 'Content-Type': 'application/json' })
+      }
+
+      res.end(JSON.stringify({ error: 'Не удалось скачать файл' }))
+    })
+
     return
   }
 
