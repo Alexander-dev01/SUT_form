@@ -12,37 +12,97 @@ const fullPath = path.join(__dirname, '..', fileName)
 
 const HEADERS = [
   'id',
+  'Секция',
+  'Подсекция',
   'Фамилия',
   'Имя',
   'Отчество',
-  'Участвовал в олимпиадах',
+  'Телефон',
+  'Email',
+  'Образовательное учреждение',
+  'Класс',
+  'Название работы',
+  'Количество баллов',
+  'Ссылка на фото работы',
+  'Фамилия руководителя',
+  'Имя руководителя',
+  'Отчество руководителя',
+  'Фамилия сопровождающего',
+  'Имя сопровождающего',
+  'Отчество сопровождающего',
   'Дата отправки'
 ]
 
-async function appendToExcel(data) {
+function getRowData(data) {
+  return [
+    data.id ?? '',
+    data.sekcia ?? '',
+    data.podsekcia ?? '',
+    data.familia ?? '',
+    data.imya ?? '',
+    data.otcestvo ?? '',
+    data.tel ?? '',
+    data.email ?? '',
+    data.schule ?? '',
+    data.klass ?? '',
+    data.rabota ?? '',
+    data.balls ?? '',
+    data.foto ?? '',
+    data.familiaR ?? '',
+    data.imyaR ?? '',
+    data.otcestvoR ?? '',
+    data.familiaS ?? '',
+    data.imyaS ?? '',
+    data.otcestvoS ?? '',
+    new Date().toLocaleString('ru-RU')
+  ]
+}
+
+function findExistingId(worksheet, id) {
+  if (!id) {
+    return false
+  }
+
+  const idColumn = worksheet.getColumn(1)
+  const values = idColumn.values
+
+  return values.some((value) => String(value) === String(id))
+}
+
+function appendToExcel(data) {
   const workbook = new ExcelJS.Workbook()
 
-  if (fs.existsSync(fullPath)) {
-    await workbook.xlsx.readFile(fullPath)
-  }
+  const readFilePromise = fs.existsSync(fullPath)
+    ? workbook.xlsx.readFile(fullPath)
+    : Promise.resolve()
 
-  let worksheet = workbook.getWorksheet('Заявки')
+  return readFilePromise
+    .then(() => {
+      let worksheet = workbook.getWorksheet('Заявки')
 
-  if (!worksheet) {
-    worksheet = workbook.addWorksheet('Заявки')
-    worksheet.addRow(HEADERS)
-  }
+      if (!worksheet) {
+        worksheet = workbook.addWorksheet('Заявки')
+        worksheet.addRow(HEADERS)
+      }
 
-  worksheet.addRow([
-    data.id,
-    data.familia,
-    data.imya,
-    data.otcestvo,
-    data.olimpidada === 'da' ? 'Да' : 'Нет', 
-    new Date().toLocaleString('ru-RU')
-  ])
+      const isAlreadyCreated = findExistingId(worksheet, data.id)
 
-  await workbook.xlsx.writeFile(fullPath)
+      if (isAlreadyCreated) {
+        return {
+          created: false,
+          message: 'Заявка с таким id уже создана'
+        }
+      }
+
+      worksheet.addRow(getRowData(data))
+
+      return workbook.xlsx.writeFile(fullPath).then(() => {
+        return {
+          created: true,
+          message: `Спасибо, ${data.imya}, заявка сохранена!`
+        }
+      })
+    })
 }
 
 const server = http.createServer((req, res) => {
@@ -63,7 +123,7 @@ const server = http.createServer((req, res) => {
       dataFull += chunk.toString()
     })
 
-    req.on('end', async () => {
+    req.on('end', () => {
       try {
         dataFull = JSON.parse(dataFull)
       } catch {
@@ -72,26 +132,30 @@ const server = http.createServer((req, res) => {
         return
       }
 
-      try {
-        await appendToExcel(dataFull)
+      console.log('datafull', dataFull)
 
-        console.log('Запись добавлена в Excel:', dataFull)
+      appendToExcel(dataFull)
+        .then((result) => {
+          console.log(result.message, dataFull)
 
-        res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({
-          message: 'Заявка сохранена в Excel',
-          data: dataFull
-        }))
-      } catch (err) {
-        console.error('Ошибка записи в Excel:', err)
+          res.writeHead(200, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({
+            message: result.message,
+            created: result.created,
+            data: dataFull
+          }))
+        })
+        .catch((err) => {
+          console.error('Ошибка записи в Excel:', err)
 
-        res.writeHead(500, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Не удалось записать в Excel' }))
-      }
+          res.writeHead(500, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Не удалось записать в Excel' }))
+        })
     })
 
     req.on('error', (err) => {
       console.error('Ошибка чтения запроса:', err)
+
       res.writeHead(500, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ error: 'Ошибка сервера' }))
     })
@@ -107,18 +171,3 @@ server.listen(port, '0.0.0.0', () => {
   console.log('==== Сервер запущен ====')
   console.log(`==== Порт: ${port} ====`)
 })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

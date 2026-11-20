@@ -3,7 +3,38 @@ class Send {
   constructor() {
     this.form = document.querySelector('form');
     this.itog = document.querySelector('.itog');
+    this.reset = document.querySelector('[data-js-reset]');
+
     this.bindEvent()
+  }
+
+  downloadExcel() {
+    fetch('http://localhost:5001/')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(response.status)
+        }
+        return response.json()
+      })
+      .then((json) => {
+        console.log('вот твой же download запрос:', json);
+        return json
+      })
+      .catch((err) => {
+        console.log(err);
+        alert(`Ошибка - попробуйте снова (${err})`, true)
+      })
+  }
+
+  resetId() {
+    const hasID = JSON.parse(localStorage.getItem('id'))
+    if (hasID) {
+      localStorage.removeItem('id')
+      alert('Id очищен, можно создавать новую заявку')
+
+      return
+    }
+    alert('Не балуйтесь :)')
   }
 
   initFormData(event) {
@@ -12,6 +43,12 @@ class Send {
     const { target } = event
     const formData = new FormData(target)
     const data = Object.fromEntries(formData.entries())
+    let id = JSON.parse(localStorage.getItem('id'))
+    if (!id) {
+      id = Math.trunc(Math.random() * 1000000000)// crypto.randomUUID()
+      localStorage.setItem('id', JSON.stringify(id))
+    }
+    data.id = id
     console.log(data);
     this.sendBackend(data)
   }
@@ -47,7 +84,7 @@ class Send {
       })
       .then((json) => {
         console.log('вот твой же объект тебе:', json);
-        this.showHide('Данные сохранены!')
+        this.showHide(json.message)
         return json
       })
       .catch((err) => {
@@ -59,6 +96,12 @@ class Send {
   bindEvent() {
     this.form.addEventListener('submit', (event) => {
       this.initFormData(event)
+    })
+    this.reset.addEventListener('click', () => {
+      this.resetId()
+    })
+    this.reset.addEventListener('contextmenu', () => {
+      this.downloadExcel()
     })
   }
 }
@@ -201,7 +244,7 @@ class Sekcii {
       case 'Атомная наука и техника':
       case 'Современные компьютерные технологии':
       case 'География':
-       if (this.podsekcia.value == 'Скоростная сборка (дать педагогу возможность прикреплять сразу список участников) (прием заявок до определенного числа)') {
+        if (this.podsekcia.value == 'Скоростная сборка (дать педагогу возможность прикреплять сразу список участников) (прием заявок до определенного числа)') {
           this.sostoyanie.nazwanie();
           console.log('название',);
         }
