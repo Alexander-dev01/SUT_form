@@ -3,8 +3,9 @@ const path = require('path')
 const fs = require('fs')
 const ExcelJS = require('exceljs')
 const dotenv = require('dotenv')
-
 dotenv.config()
+
+const ADMIN_PASSWORD = process.env.PASSWORDEXCEL
 
 const port = process.env.PORT || 5001
 const fileName = 'Users.xlsx'
@@ -141,6 +142,52 @@ const server = http.createServer((req, res) => {
       }
 
       res.end(JSON.stringify({ error: 'Не удалось скачать файл' }))
+    })
+
+    return
+  }
+
+  if (req.method === 'POST' && req.url === '/check-password') {
+    let body = ''
+
+    req.on('data', (chunk) => {
+      body += chunk.toString()
+    })
+
+    req.on('end', () => {
+      let data
+
+      try {
+        data = JSON.parse(body)
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Некорректный JSON' }))
+        return
+      }
+
+      const password = String(data.password ?? '')
+      const correctPassword = String(ADMIN_PASSWORD)
+      console.log('correctPassword=============', correctPassword);
+
+      let isSuccess = false
+
+      if (password === correctPassword) {
+        isSuccess = true
+      }
+
+      if (isSuccess) {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          success: true,
+          message: 'Пароль совпал'
+        }))
+      } else {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({
+          success: false,
+          message: 'Пароль не совпал'
+        }))
+      }
     })
 
     return
