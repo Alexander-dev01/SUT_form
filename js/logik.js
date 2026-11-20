@@ -4,7 +4,7 @@ class Send {
     this.form = document.querySelector('form');
     this.itog = document.querySelector('.itog');
     this.reset = document.querySelector('[data-js-reset]');
-
+    this.inputs = document.querySelectorAll('input[type="text"]');
     this.bindEvent()
   }
 
@@ -145,6 +145,12 @@ class Send {
     this.reset.addEventListener('contextmenu', (event) => {
       event.preventDefault()
       this.password()
+    })
+    this.inputs.forEach((element) => {
+      element.addEventListener('input', (event) => {
+        let { value } = event.target
+        event.target.value = value[0].toUpperCase() + value.slice(1).toLowerCase();
+      })
     })
   }
 }
