@@ -8,77 +8,6 @@ class Send {
     this.bindEvent()
   }
 
-  password() {
-    const pass = prompt('Пароль?')
-    if (pass === null) {
-      return
-    }
-    fetch('http://localhost:5001/check-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        password: pass
-      })
-    })
-      .then((response) => {
-        return response.json()
-      })
-      .then((json) => {
-        console.log(json);
-        if (!json.success) {
-          throw new Error(json.message)
-        }
-        if (json.success) {
-          alert(json.message)
-          this.downloadExcel()
-        }
-        return json
-      })
-      .catch((err) => {
-        alert(`${err}`)
-      })
-  }
-
-  downloadExcel() {
-    fetch('http://localhost:5001/download')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Ошибка сервера: ${response.status}`)
-        }
-        return response.blob()
-      })
-      .then((blob) => {
-        const url = URL.createObjectURL(blob)
-
-        const link = document.createElement('a')
-        link.href = url
-        link.download = 'Users.xlsx'
-
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-
-        URL.revokeObjectURL(url)
-      })
-      .catch((err) => {
-        console.log(err)
-        alert(`Ошибка скачивания: ${err}`, true)
-      })
-  }
-
-  resetId() {
-    const hasID = JSON.parse(localStorage.getItem('id'))
-    if (hasID) {
-      localStorage.removeItem('id')
-      alert('Id очищен, можно создавать новую заявку')
-
-      return
-    }
-    alert('Не балуйтесь :)')
-  }
-
   initFormData(event) {
     event.preventDefault()
 
@@ -93,6 +22,17 @@ class Send {
     data.id = id
     console.log(data);
     this.sendBackend(data)
+  }
+
+  resetId() {
+    const hasID = JSON.parse(localStorage.getItem('id'))
+    if (hasID) {
+      localStorage.removeItem('id')
+      alert('Id очищен, можно создавать новую заявку')
+
+      return
+    }
+    alert('Не балуйтесь :)')
   }
 
   showHide(text, err) {
@@ -110,8 +50,14 @@ class Send {
 
   }
 
+  toUpperCaseFIO(event) {
+    let { value } = event.target
+    event.target.value = value[0].toUpperCase() + value.slice(1).toLowerCase();
+  }
+
   sendBackend(data) {
     fetch('http://localhost:5001/', {
+      // fetch('/api', {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -135,6 +81,56 @@ class Send {
       })
   }
 
+  password() {
+  const pass = prompt('Пароль?')
+
+  if (pass === null) {
+    return
+  }
+
+  fetch('http://localhost:5001/check-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      password: pass
+    })
+  })
+    .then(async (response) => {
+      if (!response.ok) {
+        let message = `Ошибка сервера: ${response.status}`
+
+        try {
+          const json = await response.json()
+          message = json.message || json.error || message
+        } catch {
+        }
+
+        throw new Error(message)
+      }
+
+      return response.blob()
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'Users.xlsx'
+
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+
+      URL.revokeObjectURL(url)
+    })
+    .catch((error) => {
+      console.error(error)
+      alert(`Ошибка скачивания: ${error.message}`)
+    })
+}
+
   bindEvent() {
     this.form.addEventListener('submit', (event) => {
       this.initFormData(event)
@@ -148,8 +144,7 @@ class Send {
     })
     this.inputs.forEach((element) => {
       element.addEventListener('input', (event) => {
-        let { value } = event.target
-        event.target.value = value[0].toUpperCase() + value.slice(1).toLowerCase();
+        this.toUpperCaseFIO(event)
       })
     })
   }

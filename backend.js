@@ -1,15 +1,22 @@
 const http = require('http')
 const path = require('path')
 const fs = require('fs')
+const crypto = require('crypto')
+
 const ExcelJS = require('exceljs')
 const dotenv = require('dotenv')
+
 dotenv.config()
 
 const ADMIN_PASSWORD = process.env.PASSWORDEXCEL
-
 const port = process.env.PORT || 5001
 const fileName = 'Users.xlsx'
 const fullPath = path.join(__dirname, '..', fileName)
+
+if (!ADMIN_PASSWORD) {
+  console.error('Ошибка: не задана переменная окружения PASSWORDEXCEL')
+  process.exit(1)
+}
 
 const HEADERS = [
   'id',
@@ -55,8 +62,17 @@ function getRowData(data) {
     data.familiaS ?? '',
     data.imyaS ?? '',
     data.otcestvoS ?? '',
-    new Date().toLocaleString('ru-RU')
+    formatDateTime()
   ]
+}
+
+function formatDateTime(date = new Date()) {
+  const pad = (value) => String(value).padStart(2, '0')
+
+  return (
+    `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ` +
+    `${pad(date.getHours())}:${pad(date.getMinutes())}`
+  )
 }
 
 function findExistingId(worksheet, id) {
@@ -70,15 +86,17 @@ function findExistingId(worksheet, id) {
   return values.some((value) => String(value) === String(id))
 }
 
+let writeQueue = Promise.resolve()
+
 function appendToExcel(data) {
-  const workbook = new ExcelJS.Workbook()
+  const task = writeQueue.then(() => {
+    const workbook = new ExcelJS.Workbook()
 
-  const readFilePromise = fs.existsSync(fullPath)
-    ? workbook.xlsx.readFile(fullPath)
-    : Promise.resolve()
+    const readFilePromise = fs.existsSync(fullPath)
+      ? workbook.xlsx.readFile(fullPath)
+      : Promise.resolve()
 
-  return readFilePromise
-    .then(() => {
+    return readFilePromise.then(() => {
       let worksheet = workbook.getWorksheet('Заявки')
 
       if (!worksheet) {
@@ -97,18 +115,110 @@ function appendToExcel(data) {
 
       worksheet.addRow(getRowData(data))
 
-      return workbook.xlsx.writeFile(fullPath).then(() => {
-        return {
-          created: true,
-          message: `Спасибо, ${data.imya}, заявка сохранена!`
-        }
-      })
+      return workbook.xlsx.writeFile(fullPath).then(() => ({
+        created: true,
+        message: `Спасибо, ${data.imya}, заявка сохранена!`
+      }))
     })
+  })
+
+  writeQueue = task.catch((error) => {
+    console.error('Ошибка записи в Excel:', error)
+  })
+
+  return task
 }
 
-const server = http.createServer((req, res) => {
+function isPasswordCorrect(inputPassword) {
+  const password = String(inputPassword ?? '')
+  const correctPassword = String(ADMIN_PASSWORD)
+
+  const passwordHash = crypto
+    .createHash('sha256')
+    .update(password)
+    .digest()
+
+  const correctPasswordHash = crypto
+    .createHash('sha256')
+    .update(correctPassword)
+    .digest()
+
+  return crypto.timingSafeEqual(passwordHash, correctPasswordHash)
+}
+
+function sendJson(res, status, data) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8'
+  })
+
+  res.end(JSON.stringify(data))
+}
+
+function sendExcel(res) {
+  if (!fs.existsSync(fullPath)) {
+    sendJson(res, 404, { error: 'Файл Excel ещё не создан' })
+    return
+  }
+
+  res.writeHead(200, {
+    'Content-Type':
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Disposition': 'attachment; filename="Users.xlsx"'
+  })
+
+  const fileStream = fs.createReadStream(fullPath)
+
+  fileStream.pipe(res)
+
+  fileStream.on('error', (error) => {
+    console.error('Ошибка чтения Excel:', error)
+
+    if (!res.headersSent) {
+      sendJson(res, 500, { error: 'Не удалось скачать файл' })
+      return
+    }
+
+    res.end()
+  })
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = ''
+    let isTooLarge = false
+
+    req.on('data', (chunk) => {
+      body += chunk.toString()
+
+      if (body.length > 1_000_000) {
+        isTooLarge = true
+        req.destroy()
+        reject(new Error('Слишком большой запрос'))
+      }
+    })
+
+    req.on('end', () => {
+      if (isTooLarge) {
+        return
+      }
+
+      try {
+        resolve(JSON.parse(body))
+      } catch {
+        reject(new Error('Некорректный JSON'))
+      }
+    })
+
+    req.on('error', reject)
+  })
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
+  const route = url.pathname
+
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   if (req.method === 'OPTIONS') {
@@ -117,131 +227,49 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // скачивание excel
-  if (req.method === 'GET' && req.url === '/download') {
-    if (!fs.existsSync(fullPath)) {
-      res.writeHead(404, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'Файл Excel ещё не создан' }))
-      return
-    }
+  if (req.method === 'POST' && route === '/check-password') {
+    try {
+      const data = await readJsonBody(req)
 
-    res.writeHead(200, {
-      'Content-Type':
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="Users.xlsx"'
-    })
-
-    const fileStream = fs.createReadStream(fullPath)
-    fileStream.pipe(res)
-
-    fileStream.on('error', (err) => {
-      console.error('Ошибка чтения Excel:', err)
-
-      if (!res.headersSent) {
-        res.writeHead(500, { 'Content-Type': 'application/json' })
-      }
-
-      res.end(JSON.stringify({ error: 'Не удалось скачать файл' }))
-    })
-
-    return
-  }
-
-  if (req.method === 'POST' && req.url === '/check-password') {
-    let body = ''
-
-    req.on('data', (chunk) => {
-      body += chunk.toString()
-    })
-
-    req.on('end', () => {
-      let data
-
-      try {
-        data = JSON.parse(body)
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Некорректный JSON' }))
-        return
-      }
-
-      const password = String(data.password ?? '')
-      const correctPassword = String(ADMIN_PASSWORD)
-      console.log('correctPassword=============', correctPassword);
-
-      let isSuccess = false
-
-      if (password === correctPassword) {
-        isSuccess = true
-      }
-
-      if (isSuccess) {
-        res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({
-          success: true,
-          message: 'Пароль совпал'
-        }))
-      } else {
-        res.writeHead(401, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({
+      if (!isPasswordCorrect(data.password)) {
+        sendJson(res, 401, {
           success: false,
           message: 'Пароль не совпал'
-        }))
-      }
-    })
-
-    return
-  }
-
-  if (req.method === 'POST') {
-    let dataFull = ''
-
-    req.on('data', (chunk) => {
-      dataFull += chunk.toString()
-    })
-
-    req.on('end', () => {
-      try {
-        dataFull = JSON.parse(dataFull)
-      } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ error: 'Некорректный JSON' }))
+        })
         return
       }
 
-      console.log('datafull', dataFull)
+      sendExcel(res)
+    } catch (error) {
+      sendJson(res, 400, {
+        error: error.message || 'Ошибка обработки запроса'
+      })
+    }
+    return
+  }
 
-      appendToExcel(dataFull)
-        .then((result) => {
-          console.log(result.message, dataFull)
+  if (req.method === 'POST' && route === '/api') {
+    try {
+      const data = await readJsonBody(req)
 
-          res.writeHead(200, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({
-            message: result.message,
-            created: result.created,
-            data: dataFull
-          }))
-        })
-        .catch((err) => {
-          console.error('Ошибка записи в Excel:', err)
+      const result = await appendToExcel(data)
 
-          res.writeHead(500, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Не удалось записать в Excel' }))
-        })
-    })
+      sendJson(res, 200, {
+        message: result.message,
+        created: result.created
+      })
+    } catch (error) {
+      console.error('Ошибка обработки заявки:', error)
 
-    req.on('error', (err) => {
-      console.error('Ошибка чтения запроса:', err)
-
-      res.writeHead(500, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ error: 'Ошибка сервера' }))
-    })
+      sendJson(res, error.message === 'Некорректный JSON' ? 400 : 500, {
+        error: 'Не удалось сохранить заявку'
+      })
+    }
 
     return
   }
 
-  res.writeHead(405, { 'Content-Type': 'application/json' })
-  res.end(JSON.stringify({ error: 'Разрешены только POST-запросы' }))
+  sendJson(res, 404, { error: 'Страница не найдена' })
 })
 
 server.listen(port, '0.0.0.0', () => {
